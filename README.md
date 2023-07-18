@@ -1,10 +1,7 @@
 # SAML-Kiran-Gen
-
 SAML Generator BY Kiran G.
 
-
 Current Response iS: --
-
 <saml2p:Response
 	xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol" ID="4a126de2-5e34-45d5-8f54-89b95299b478" IssueInstant="2023-07-18T10:14:22.769Z" Version="2.0">
 	<saml2:Issuer
@@ -62,3 +59,4 @@ D9TMdrdEWkl8KEFvyKnaWBSgEqDXuqbkAVKCML3frJbB</ds:X509Certificate>
 		<MyPersonalInfo Name="Check Again">OKOK</MyPersonalInfo>
 	</saml2:Assertion>
 </saml2p:Response>
+
