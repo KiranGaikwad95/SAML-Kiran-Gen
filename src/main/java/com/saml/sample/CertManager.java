@@ -9,8 +9,17 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 
+import org.opensaml.xml.Configuration;
+import org.opensaml.xml.security.SecurityConfiguration;
+import org.opensaml.xml.security.SecurityException;
 import org.opensaml.xml.security.credential.Credential;
+import org.opensaml.xml.security.keyinfo.KeyInfoGenerator;
+import org.opensaml.xml.security.keyinfo.KeyInfoGeneratorFactory;
+import org.opensaml.xml.security.keyinfo.KeyInfoGeneratorManager;
+import org.opensaml.xml.security.keyinfo.KeyInfoHelper;
+import org.opensaml.xml.security.keyinfo.NamedKeyInfoGeneratorManager;
 import org.opensaml.xml.security.x509.BasicX509Credential;
+import org.opensaml.xml.signature.KeyInfo;
 
 public class CertManager {
 
@@ -56,6 +65,28 @@ public class CertManager {
 //		credential.setEntityCertificate(publicKey);
 //		credential.setPrivateKey(privateKey);
 //	}
+	
+	/*
+	 * To Add X509 Cert in XML
+	 * */
+	public KeyInfo getKeyInfo(final Credential c, final String keyName) throws SecurityException {
+
+	    final SecurityConfiguration secConfiguration =
+	            Configuration.getGlobalSecurityConfiguration();
+	    final NamedKeyInfoGeneratorManager namedKeyInfoGeneratorManager = 
+	            secConfiguration.getKeyInfoGeneratorManager();
+	    final KeyInfoGeneratorManager keyInfoGeneratorManager =
+	            namedKeyInfoGeneratorManager.getDefaultManager();
+	    final KeyInfoGeneratorFactory keyInfoGeneratorFactory =
+	            keyInfoGeneratorManager.getFactory(c);
+	    final KeyInfoGenerator keyInfoGenerator = keyInfoGeneratorFactory.newInstance();
+	    KeyInfo keyInfo;
+
+	    keyInfo = keyInfoGenerator.generate(c);
+//	    KeyInfoHelper.addKeyName(keyInfo,
+//	            keyName);
+	    return keyInfo;
+	}
 
 	/**
 	 * gets credential used to sign saml assertionts that are produced. This method
@@ -89,6 +120,7 @@ public class CertManager {
 		BasicX509Credential credential = new BasicX509Credential();
 		credential.setEntityCertificate(publicKey);
 		credential.setPrivateKey(privateKey);
+		
 
 		return credential;
 	}
