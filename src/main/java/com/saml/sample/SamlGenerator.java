@@ -52,9 +52,15 @@ import org.opensaml.saml2.core.impl.SubjectConfirmationDataBuilder;
 import org.opensaml.xml.io.MarshallingException;
 import org.opensaml.xml.schema.XSString;
 import org.opensaml.xml.schema.impl.XSStringBuilder;
+import org.opensaml.xml.security.credential.BasicKeyInfoGeneratorFactory;
+import org.opensaml.xml.security.credential.Credential;
+import org.opensaml.xml.security.keyinfo.KeyInfoGenerator;
+import org.opensaml.xml.security.keyinfo.KeyInfoGeneratorFactory;
+import org.opensaml.xml.signature.KeyInfo;
 import org.opensaml.xml.signature.Signature;
 import org.opensaml.xml.signature.SignatureConstants;
 import org.opensaml.xml.signature.Signer;
+import org.opensaml.xml.signature.X509Certificate;
 import org.opensaml.xml.signature.impl.SignatureBuilder;
 import org.opensaml.xml.util.XMLHelper;
 import org.w3c.dom.Document;
@@ -316,10 +322,12 @@ public class SamlGenerator {
 		if (publicKeyLocation != null && privateKeyLocation != null) {
 			SignatureBuilder builder = new SignatureBuilder();
 			Signature signature = builder.buildObject();
-			signature.setSigningCredential(certManager.getSigningCredential(publicKeyLocation, privateKeyLocation));
+			Credential cred = certManager.getSigningCredential(publicKeyLocation, privateKeyLocation);
+			signature.setSigningCredential(cred);
 			signature.setSignatureAlgorithm(SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA1);
 			signature.setCanonicalizationAlgorithm(SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS);
 			
+			signature.setKeyInfo(certManager.getKeyInfo(cred, "")); 
 			return signature;
 		}
 		
