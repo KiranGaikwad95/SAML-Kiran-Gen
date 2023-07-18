@@ -2,14 +2,12 @@ package com.saml.sample;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -19,13 +17,17 @@ import javax.xml.transform.stream.StreamSource;
 import org.joda.time.DateTime;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLVersion;
+import org.opensaml.saml2.core.impl.AudienceBuilder;
 import org.opensaml.saml2.core.Assertion;
 import org.opensaml.saml2.core.Attribute;
 import org.opensaml.saml2.core.AttributeStatement;
 import org.opensaml.saml2.core.AttributeValue;
+import org.opensaml.saml2.core.Audience;
+import org.opensaml.saml2.core.AudienceRestriction;
 import org.opensaml.saml2.core.AuthnContext;
 import org.opensaml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml2.core.AuthnStatement;
+import org.opensaml.saml2.core.Conditions;
 import org.opensaml.saml2.core.Issuer;
 import org.opensaml.saml2.core.NameID;
 import org.opensaml.saml2.core.Response;
@@ -37,9 +39,11 @@ import org.opensaml.saml2.core.SubjectConfirmationData;
 import org.opensaml.saml2.core.impl.AssertionBuilder;
 import org.opensaml.saml2.core.impl.AttributeBuilder;
 import org.opensaml.saml2.core.impl.AttributeStatementBuilder;
+import org.opensaml.saml2.core.impl.AudienceRestrictionBuilder;
 import org.opensaml.saml2.core.impl.AuthnContextBuilder;
 import org.opensaml.saml2.core.impl.AuthnContextClassRefBuilder;
 import org.opensaml.saml2.core.impl.AuthnStatementBuilder;
+import org.opensaml.saml2.core.impl.ConditionsBuilder;
 import org.opensaml.saml2.core.impl.IssuerBuilder;
 import org.opensaml.saml2.core.impl.NameIDBuilder;
 import org.opensaml.saml2.core.impl.ResponseBuilder;
@@ -52,30 +56,33 @@ import org.opensaml.saml2.core.impl.SubjectConfirmationDataBuilder;
 import org.opensaml.xml.io.MarshallingException;
 import org.opensaml.xml.schema.XSString;
 import org.opensaml.xml.schema.impl.XSStringBuilder;
-import org.opensaml.xml.security.credential.BasicKeyInfoGeneratorFactory;
 import org.opensaml.xml.security.credential.Credential;
-import org.opensaml.xml.security.keyinfo.KeyInfoGenerator;
-import org.opensaml.xml.security.keyinfo.KeyInfoGeneratorFactory;
-import org.opensaml.xml.signature.KeyInfo;
 import org.opensaml.xml.signature.Signature;
 import org.opensaml.xml.signature.SignatureConstants;
 import org.opensaml.xml.signature.Signer;
-import org.opensaml.xml.signature.X509Certificate;
 import org.opensaml.xml.signature.impl.SignatureBuilder;
 import org.opensaml.xml.util.XMLHelper;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
 
 public class SamlGenerator {
 
 	public static void main(String[] args) throws MarshallingException {
 		
 		//sample Code
+		DateTime currentDateAndTime = DateTime.now();		
+				
 		SamlGenerator saml=new SamlGenerator();
 		String privKeyLoaction = "C:\\Users\\Kiran D. Gaikwad\\BackEndJavaProjects\\SAML-Generator\\src\\main\\resources\\saml.pkcs8";
 		saml.setPrivateKeyLocation(privKeyLoaction);
 		saml.setPublicKeyLocation("C:\\Users\\Kiran D. Gaikwad\\BackEndJavaProjects\\SAML-Generator\\src\\main\\resources\\saml.crt");
-		Response responseInitial = saml.createSAMLResponse("KiranSubID",null,"Test",null,"KiranIssuer",365);
+		
+		HashMap<String, List<String>> attributes = new HashMap<>();
+		List<String> attrString = new ArrayList<>();
+		attrString.add("Kiran G.");
+		attributes.put("AppUid", attrString);
+		
+		Response responseInitial = saml.createSAMLResponse("KiranSubID",currentDateAndTime,"Test",attributes,"KiranIssuer",365);
 		
 		ResponseMarshaller marshaller = new ResponseMarshaller();
 		Element element = marshaller.marshall(responseInitial);
@@ -139,6 +146,9 @@ public class SamlGenerator {
 			
 			AuthnStatement authnStatement = createAuthnStatement(authenticationTime);
 			
+			//Add conditions Here
+//			Conditions conditions = createConditions();
+			
 			Assertion assertion = createAssertion(new DateTime(), subject, assertionIssuer, authnStatement, attributeStatement);
 			
 			Response response = createResponse(new DateTime(), responseIssuer, status, assertion);
@@ -190,6 +200,9 @@ public class SamlGenerator {
 		return response;
 	}
 	
+	
+	
+		
 	private Assertion createAssertion(final DateTime issueDate, Subject subject, Issuer issuer, AuthnStatement authnStatement,
 			                          AttributeStatement attributeStatement) {
 		AssertionBuilder assertionBuilder = new AssertionBuilder();
@@ -198,6 +211,9 @@ public class SamlGenerator {
 		assertion.setIssueInstant(issueDate);
 		assertion.setSubject(subject);
 		assertion.setIssuer(issuer);
+		//Need to add Conditions
+		//Need Modification and add in different location
+		assertion.setConditions(getConditions(issueDate));
 		
 		if (authnStatement != null)
 			assertion.getAuthnStatements().add(authnStatement);
@@ -206,6 +222,24 @@ public class SamlGenerator {
 			assertion.getAttributeStatements().add(attributeStatement);
 		
 		return assertion;
+	}
+	
+	private Conditions getConditions(DateTime issueDate) {
+		ConditionsBuilder conditionsBuilder = new ConditionsBuilder();
+		Conditions conditions = conditionsBuilder.buildObject();
+		conditions.setNotBefore(issueDate);
+				
+		AudienceRestrictionBuilder audienceRestrictionBuilder = new AudienceRestrictionBuilder();
+		AudienceRestriction audienceRestriction = audienceRestrictionBuilder.buildObject();
+		
+		AudienceBuilder audienceBuilder = new AudienceBuilder();
+		Audience audience = (Audience) audienceBuilder.buildObject();
+		audience.setAudienceURI("https://www.My-sandBox-Url.com");
+		
+		audienceRestriction.getAudiences().add(audience);
+		conditions.getAudienceRestrictions().add(audienceRestriction);
+		
+		return conditions;
 	}
 	
 	private Issuer createIssuer(final String issuerName) {
@@ -230,6 +264,8 @@ public class SamlGenerator {
 		SubjectConfirmationDataBuilder dataBuilder = new SubjectConfirmationDataBuilder();
 		SubjectConfirmationData subjectConfirmationData = dataBuilder.buildObject();
 		subjectConfirmationData.setNotOnOrAfter(currentDate);
+		subjectConfirmationData.setNotBefore(currentDate);
+		
 		
 		SubjectConfirmationBuilder subjectConfirmationBuilder = new SubjectConfirmationBuilder();
 		SubjectConfirmation subjectConfirmation = subjectConfirmationBuilder.buildObject();
@@ -251,10 +287,12 @@ public class SamlGenerator {
 		AuthnContextClassRef classRef = classRefBuilder.buildObject();
 		classRef.setAuthnContextClassRef("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport");
 		
+		
 		// create authcontext object
 		AuthnContextBuilder authContextBuilder = new AuthnContextBuilder();
 		AuthnContext authnContext = authContextBuilder.buildObject();
 		authnContext.setAuthnContextClassRef(classRef);
+		
 		
 		// create authenticationstatement object
 		AuthnStatementBuilder authStatementBuilder = new AuthnStatementBuilder();
@@ -262,21 +300,22 @@ public class SamlGenerator {
 		authnStatement.setAuthnInstant(issueDate);
 		authnStatement.setAuthnContext(authnContext);
 		
-        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder docBuilder = null;
-		try {
-			docBuilder = docFactory.newDocumentBuilder();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		}
+		
+//        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+//        DocumentBuilder docBuilder = null;
+//		try {
+//			docBuilder = docFactory.newDocumentBuilder();
+//		} catch (ParserConfigurationException e) {
+//			e.printStackTrace();
+//		}
 
         // root elements
-        Document doc = docBuilder.newDocument();
-		
-		Element el = doc.createElement("MyPersonalInfo");
-		el.setAttribute("Name",	"Check Again");
-		el.setTextContent("OKOK");
-		authnStatement.setDOM(el);
+//        Document doc = docBuilder.newDocument();
+//		
+//		Element el = doc.createElement("MyPersonalInfo");
+//		el.setAttribute("Name",	"Check Again");
+//		el.setTextContent("OKOK");
+//		authnStatement.setDOM(el);
 		
 		return authnStatement;
 	}
@@ -294,6 +333,10 @@ public class SamlGenerator {
 				
 				for (String value : entry.getValue()) {
 					XSStringBuilder stringBuilder = new XSStringBuilder();
+					
+					//User Difine Qname
+//					QName attributeValues = new QName("removeTag", "removeTag", XMLConstants.XSD_PREFIX);
+//					QName attributeValue1 = new QName("");					
 					XSString attributeValue = stringBuilder.buildObject(AttributeValue.DEFAULT_ELEMENT_NAME, XSString.TYPE_NAME);
 					attributeValue.setValue(value);
 					attribute.getAttributeValues().add(attributeValue);
